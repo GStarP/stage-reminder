@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from stagereminder.extractor.llm import LLMExtractor
 from dotenv import load_dotenv
+from stagereminder.logger import logger
 
 
 # 加载环境变量
@@ -22,11 +23,11 @@ async def test_extract_stage_info(example_weibos):
     api_key = os.getenv("DEEPSEEK_API_KEY")
     extractor = LLMExtractor(api_key)
     
+    all_stage_info = []
     # 遍历所有微博
-    for weibo in example_weibos["weibos"]:
+    for weibo in example_weibos:
         result = await extractor.extract_stage_info(weibo["text"])
-        
-        # 如果是演出预告，打印详细信息
-        if result.get("is_preview"):
-            print(f"\n发现演出预告 (微博ID: {weibo['id']}):")
-            print(json.dumps(result, ensure_ascii=False, indent=2))
+        if result.get("found"):
+            all_stage_info.append(result)
+    
+    logger.info(f"所有演出预告信息: {all_stage_info}")

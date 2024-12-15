@@ -1,70 +1,71 @@
 from openai import AsyncOpenAI
-from typing import Dict
+from typing import Dict, Optional
 import json
+from stagereminder.logger import logger
 
 class LLMExtractor:
     
     def __init__(self, api_key: str):
         self.client = AsyncOpenAI(base_url="https://api.deepseek.com/v1", api_key=api_key)
         self.system_prompt = """
-你是一个专门分析微博内容的助手。你的任务是从微博文本中提取演出相关信息。
+## 角色
+你是一个专门分析微博内容的助手。你的任务是从微博内容中提取演出预告信息。
 
-请注意区分以下情况：
-1. 演出预告：包含未来将要举办的演出信息，通常会提到售票时间、票价等关键信息
-2. 演出回顾：描述已经结束的演出，通常是感谢、分享照片等内容
-
-只有对于演出预告，才需要提取并返回以下信息：
-- stage_name: 演出名称 (str)
-- stage_time: 演出时间 (datetime)
-- stage_location: 演出地点 (str)
+## 任务
+首先判断微博内容是否包含演出预告信息，如果包含，尝试从中提取演出预告信息，字段如下：
+- stage_name: 演出名称 (str)(required)
+- stage_time: 演出时间 (datetime)(required)
+- stage_location: 演出地点 (str)(required)
 - ticket_time: 售票时间 (datetime)
 - ticket_price: 票价信息 (str)
 - ticket_platform: 售票平台 (str)
-- artists: 参演者 (str[])
+- artists: 参演者 (str)
 - organizer: 主办方 (str)
 - description: 演出内容描述 (str)
-- slogan: 宣传语 (str)
 
-其中，时间应该为 yyyy-MM-dd hh:mm 的形式，如果缺少时分秒信息可以改为 yyyy-MM-dd 的形式，如果缺少日期信息可以改为 yyyy-MM 的形式，如果连年月信息都没有则视为没有这一字段。
+## 注意事项
+在提取演出预告信息时，请牢记以下注意事项：
+- 即使微博内容包含部分演出相关信息，也不一定是演出预告信息，还有可能是演出结束后的回顾，请仔细甄别。我给出的建议是，当微博内容包含演出时间和演出地点，且具有明显的“预告”性质时，才认为其包含演出预告信息。
+- 演出时间和售票时间：
+  - 应该是单个时间，而非时间范围，如果有识别出一个时间范围，请使用其开始时间作为演出时间。
+  - 如果提取到的时间信息没有包含年份，则认为是今年。
+  - 时间信息应该尽可能详细，最理想的格式为"yyyy-MM-dd hh:mm"，如果缺少部分信息也可以改为"yyyy-MM-dd hh"/"yyyy-MM-dd"/"yyyy-MM"的格式。
+- 演出地点不一定是一个物理地点，你应该先判断演出是否为线上演出，如果是线上演出，则演出地点更可能是线上平台。
 
-如果是演出回顾或者与演出无关的内容，请以JSON格式返回提取结果：
-{
-    "is_preview": false,
-    "reason": "这是一条演出回顾/与演出无关的微博"
-}
+## 输出格式
+请以JSON格式输出，字段如下：
+- found: 是否找到演出预告信息 (bool)
+- stage_info: 演出预告信息 (Dict)
 
-如果是演出预告，请返回：
-{
-    "is_preview": true,
-    "stage_info": {
-        // 上述字段，未提及的字段可以省略
-    }
-}
+如果判断出此条微博内容中不包含演出预告信息，或者你无法从微博内容中提取出有效的演出预告信息，found为False，stage_info为空字典。
+反之，found为True，stage_info为提取到的演出预告信息。
 """
 
-    async def extract_stage_info(self, post_text: str) -> Dict:
+    async def extract_stage_info(self, weibo_text: str) -> Optional[Dict]:
         """
-        从推文中提取演出相关信息
+        从微博内容中提取演出相关信息
 
         Args:
-            text: 推文内容
+            weibo_text: 微博内容
 
         Returns:
-            提取的演出信息或空结果
+            提取的演出预告信息或空结果
         """
         messages = [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": f"请分析以下推文内容：\n\n{post_text}"}
+            {"role": "user", "content": f"请分析以下微博内容：\n\n{weibo_text}"}
         ]
         
-        print(f'正在分析推文：{post_text[:10]}')
+        logger.info(f'正在分析推文：{weibo_text}')
         response = await self.client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
             temperature=0,
             response_format={ "type": "json_object" }
         )
+
+        result = json.loads(response.choices[0].message.content)
+        logger.info(f'分析完成：{result}')
         
-        # 将返回的 JSON 字符串解析为 Python 字典
-        return json.loads(response.choices[0].message.content)
+        return result
     

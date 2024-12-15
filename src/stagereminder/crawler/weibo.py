@@ -1,7 +1,9 @@
 import httpx
-from typing import Dict, List
-from datetime import datetime, timedelta
+from typing import Dict
+from datetime import datetime
 import pytz
+
+from stagereminder.logger import logger
 
 class WeiboCrawler:
     """微博内容抓取器"""
@@ -21,11 +23,12 @@ class WeiboCrawler:
         """提取微博文本信息"""
         return {
             "id": mblog["id"],
-            "created_at": mblog["created_at"],
-            "text": mblog["text"].replace('<br />', '\n')  # 替换HTML换行为纯文本换行
+            "created_at": self._parse_weibo_time(mblog["created_at"]),
+            "text": mblog["text"],
+            "url": f"https://m.weibo.cn/detail/{mblog['id']}"
         }
     
-    async def fetch_user_weibo(self, user_id: str) -> Dict:
+    async def fetch_user_weibo(self, user_id: str) -> list:
         """
         获取指定用户的微博内容并处理
 
@@ -50,7 +53,7 @@ class WeiboCrawler:
             
             # 计算总微博数
             total_weibo = len(data["data"]["cards"])
-            print(f"\n总微博数: {total_weibo}")
+            logger.info(f"总微博数: {total_weibo}")
             
             # 提取所有微博的文本信息
             weibos = []
@@ -59,7 +62,4 @@ class WeiboCrawler:
                     weibo_info = self._extract_weibo_text(card["mblog"])
                     weibos.append(weibo_info)
             
-            return {
-                "total_count": total_weibo,
-                "weibos": weibos
-            }
+            return weibos

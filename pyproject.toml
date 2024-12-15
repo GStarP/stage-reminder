@@ -3,7 +3,6 @@ name = "stagereminder"
 version = "0.1.0"
 description = ""
 authors = ["GStarP"]
-readme = "README.md"
 packages = [
     { include = "stagereminder", from = "src" }
 ]
@@ -14,6 +13,9 @@ httpx = "^0.27.2"
 qq-botpy = "^1.2.1"
 python-dotenv = "^1.0.1"
 openai = "^1.55.0"
+sqlalchemy = "^2.0.36"
+apscheduler = "^3.11.0"
+pytz = "^2024.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

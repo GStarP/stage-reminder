@@ -3,3 +3,5 @@ __pycache__
 .env
 botpy.log
 botpy.log.*
+logs
+db
