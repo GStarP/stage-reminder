@@ -22,7 +22,15 @@ class StageReminderService:
             message = "\n━━━━━━━━━━━━━━"
             has_stages = False
             
-            for artist in artists:
+            # 查找是否有匹配的艺人名称
+            matched_artists = [artist for artist in artists if content.lower().strip() in artist.name.lower().strip()]
+            logger.info(f"matched_artists: {matched_artists}")
+            
+            # 如果找到匹配的艺人，只显示匹配艺人的演出
+            # 如果没有找到匹配的艺人，显示所有艺人的演出
+            target_artists = matched_artists if matched_artists else artists
+            
+            for artist in target_artists:
                 stages = self.db.get_artist_stages(artist.id)
                 if stages:  # 只有当艺人有演出信息时才添加到消息中
                     message += self._format_artist_stages(artist, stages)
@@ -60,7 +68,7 @@ class StageReminderService:
                             'show_time': self._parse_datetime(stage_info['stage_time']),
                             'details': {
                                 'venue': stage_info['stage_location'],
-                                'ticket_time': self._parse_datetime(stage_info['ticket_time']),
+                                'ticket_time': None if stage_info.get('ticket_price') is None else self._parse_datetime(stage_info.get('ticket_price')),
                                 'price': stage_info.get('ticket_price'),
                                 'platform': stage_info.get('ticket_platform'),
                                 'artists': stage_info.get('artists'),
