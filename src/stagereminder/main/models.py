@@ -16,9 +16,9 @@ class Stage(Base):
     __tablename__ = 'stages'
     
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    show_time = Column(DateTime, nullable=False)
-    details = Column(JSON)
-    weibo_url = Column(String)
+    stage_name = Column(String, nullable=False)
+    stage_time = Column(DateTime, nullable=False)
+    detail = Column(JSON)
+    weibo_id = Column(String)
     artist_id = Column(Integer, ForeignKey('artists.id'), nullable=False)
     artist = relationship("Artist", back_populates="stages")  # 一个演出只属于一个艺人

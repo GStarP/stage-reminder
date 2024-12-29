@@ -40,28 +40,28 @@ class DBManager:
                 session.query(Stage)
                 .filter_by(
                     artist_id=artist_id,
-                    name=stage_data['name'],
-                    show_time=stage_data['show_time']
+                    stage_name=stage_data['stage_name'],
+                    stage_time=stage_data['stage_time']
                 )
                 .first()
             )
 
             if existing_stage:
-                logger.info(f"Stage already exists: {stage_data['name']}")
+                logger.info(f"Stage already exists: {stage_data['stage_name']}")
                 return False
 
             # 创建新的演出记录
             new_stage = Stage(
-                name=stage_data['name'],
-                show_time=stage_data['show_time'],
-                details=stage_data.get('details', {}),
-                weibo_url=stage_data.get('weibo_url'),
+                stage_name=stage_data['stage_name'],
+                stage_time=stage_data['stage_time'],
+                detail=stage_data.get('detail', {}),
+                weibo_id=stage_data.get('weibo_id'),
                 artist_id=artist_id
             )
             session.add(new_stage)
             session.commit()
             
-            logger.info(f"Added new stage: {stage_data['name']} for artist {artist.name}")
+            logger.info(f"Added new stage: {stage_data['stage_name']} for artist {artist.name}")
             return True
 
         except SQLAlchemyError as e:
@@ -80,10 +80,9 @@ class DBManager:
                 session.query(Stage)
                 .filter(
                     Stage.artist_id == artist_id,
-                    # @DEBUG 暂时不管时间
-                    # Stage.show_time > now
+                    Stage.stage_time > now
                 )
-                .order_by(Stage.show_time)
+                .order_by(Stage.stage_time.desc())
                 .all()
             )
             return stages

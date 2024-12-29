@@ -20,7 +20,7 @@ async def test_fetch_user_weibo():
     user_id = "2266537042"
     
     # 调用接口获取数据
-    weibos = await crawler.fetch_user_weibo(user_id)
+    weibos = await crawler.get_recent_weibo_list(user_id)
     
     # 基本数据格式验证
     assert isinstance(weibos, list)

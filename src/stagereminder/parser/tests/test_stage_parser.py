@@ -2,7 +2,7 @@ import json
 import pytest
 import os
 from pathlib import Path
-from stagereminder.extractor.llm import LLMExtractor
+from stagereminder.parser.stage_parser import StageParser
 from dotenv import load_dotenv
 from stagereminder.logger import logger
 
@@ -21,12 +21,12 @@ def example_weibos():
 async def test_extract_stage_info(example_weibos):
     """测试从示例微博数据中提取演出信息"""
     api_key = os.getenv("DEEPSEEK_API_KEY")
-    extractor = LLMExtractor(api_key)
+    parser = StageParser(api_key)
     
     all_stage_info = []
     # 遍历所有微博
     for weibo in example_weibos:
-        result = await extractor.extract_stage_info(weibo["text"])
+        result = await parser.parse_weibo(weibo)
         if result.get("found"):
             all_stage_info.append(result)
     
